@@ -203,20 +203,29 @@ static uint32_t dc_get_next_message_id(void)
 	return nct.message_id;
 }
 
-/* Free memory allocated for the data endpoint and reset the endpoint. */
+/* Free memory allocated for the data endpoint and reset the endpoint.
+ *
+ * Casting away const for rx, tx, and m seems to be OK because the
+ * nct_dc_endpoint_set() caller gets the buffers from
+ * json_decode_and_alloc(), which uses nrf_cloud_malloc() to call
+ * k_malloc().
+ *
+ * The job_status_endp.utf8 buffer is allocated in this file as
+ * non-const, so casting away const here is safe.
+ */
 static void dc_endpoint_free(void)
 {
 	if (nct.dc_rx_endp.utf8 != NULL) {
-		nrf_cloud_free(nct.dc_rx_endp.utf8);
+		nrf_cloud_free((void *)nct.dc_rx_endp.utf8);
 	}
 	if (nct.dc_tx_endp.utf8 != NULL) {
-		nrf_cloud_free(nct.dc_tx_endp.utf8);
+		nrf_cloud_free((void *)nct.dc_tx_endp.utf8);
 	}
 	if (nct.dc_m_endp.utf8 != NULL) {
-		nrf_cloud_free(nct.dc_m_endp.utf8);
+		nrf_cloud_free((void *)nct.dc_m_endp.utf8);
 	}
 	if (nct.job_status_endp.utf8 != NULL) {
-		nrf_cloud_free(nct.job_status_endp.utf8);
+		nrf_cloud_free((void *)nct.job_status_endp.utf8);
 	}
 	dc_endpoint_reset();
 }
@@ -1003,40 +1012,41 @@ void nct_dc_endpoint_set(const struct nrf_cloud_data *tx_endp,
 	 */
 	dc_endpoint_free();
 
-	nct.dc_tx_endp.utf8 = (uint8_t *)tx_endp->ptr;
+	nct.dc_tx_endp.utf8 = (const uint8_t *)tx_endp->ptr;
 	nct.dc_tx_endp.size = tx_endp->len;
 
-	nct.dc_rx_endp.utf8 = (uint8_t *)rx_endp->ptr;
+	nct.dc_rx_endp.utf8 = (const uint8_t *)rx_endp->ptr;
 	nct.dc_rx_endp.size = rx_endp->len;
 
 	if (m_endp != NULL) {
-		nct.dc_m_endp.utf8 = (uint8_t *)m_endp->ptr;
+		nct.dc_m_endp.utf8 = (const uint8_t *)m_endp->ptr;
 		nct.dc_m_endp.size = m_endp->len;
 
 #if defined(CONFIG_AWS_FOTA)
+		void *job_status_utf8;
 		int ret;
 
 		nct.job_status_endp.size =
 			nct.dc_m_endp.size + NCT_TOPIC_PREFIX_M_D_LEN +
 			NRF_CLOUD_CLIENT_ID_LEN + NCT_JOB_STATUS_TOPIC_LEN + 1;
-		nct.job_status_endp.utf8 =
-			nrf_cloud_malloc(nct.job_status_endp.size);
-		if (nct.job_status_endp.utf8 == NULL) {
+		job_status_utf8 = nrf_cloud_malloc(nct.job_status_endp.size);
+		if (job_status_utf8 == NULL) {
 			LOG_ERR("Failed to allocate mem for job status topic");
+			nct.job_status_endp.utf8 = NULL;
 			return;
 		}
-
-		ret = snprintf(nct.job_status_endp.utf8,
+		ret = snprintf(job_status_utf8,
 			       nct.job_status_endp.size, "%s%s%s%s",
 			       nct.dc_m_endp.utf8, NCT_M_D_TOPIC_PREFIX,
 			       client_id_buf, NCT_JOB_STATUS_TOPIC);
 		if ((ret <= 0) || (ret >= nct.job_status_endp.size)) {
-			nrf_cloud_free(nct.job_status_endp.utf8);
+			nrf_cloud_free(job_status_utf8);
 			nct.job_status_endp.utf8 = NULL;
 			nct.job_status_endp.size = 0;
 			LOG_ERR("Failed to build job status topic");
 			return;
 		}
+		nct.job_status_endp.utf8 = (const uint8_t *)job_status_utf8;
 		/* size is actually string length */
 		nct.job_status_endp.size = ret;
 #endif
