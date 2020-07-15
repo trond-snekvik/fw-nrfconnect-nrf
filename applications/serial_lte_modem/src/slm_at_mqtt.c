@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <net/mqtt.h>
 #include <net/socket.h>
+#include <random/rand32.h>
 #include "slm_util.h"
 #include "slm_at_mqtt.h"
 

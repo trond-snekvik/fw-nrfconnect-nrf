@@ -11,6 +11,7 @@
 #include <net/coap.h>
 #include <net/socket.h>
 #include <modem/lte_lc.h>
+#include <random/rand32.h>
 #if defined(CONFIG_LWM2M_CARRIER)
 #include <lwm2m_carrier.h>
 #endif

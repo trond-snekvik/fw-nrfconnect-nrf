@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <drivers/uart.h>
 #include <string.h>
+#include <random/rand32.h>
 
 #include <net/mqtt.h>
 #include <net/socket.h>

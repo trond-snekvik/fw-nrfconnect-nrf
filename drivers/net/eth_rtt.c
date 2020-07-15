@@ -46,6 +46,7 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 #include <net/net_core.h>
 #include <net/ethernet.h>
 #include <sys/crc.h>
+#include <random/rand32.h>
 #include <SEGGER_RTT.h>
 
 /** RTT channel name used to identify Ethernet transfer channel. */

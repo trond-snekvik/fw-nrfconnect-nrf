@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <nrf_errno.h>
 #include <modem/modem_key_mgmt.h>
+#include <random/rand32.h>
 
 /* NVS-related defines */
 

@@ -4,6 +4,7 @@
  *SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
  */
 #include <zephyr.h>
+#include <random/rand32.h>
 #include <stdio.h>
 #include <net/mqtt.h>
 #include <logging/log.h>
