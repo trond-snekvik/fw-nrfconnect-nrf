@@ -206,18 +206,8 @@ int ot_coap_init(otStateChangedCallback on_state_changed,
 	}
 
 	otCoapSetDefaultHandler(srv_context.ot, coap_default_handler, NULL);
-
-	error = otCoapAddResource(srv_context.ot, &light_resource);
-	if (error != OT_ERROR_NONE) {
-		LOG_ERR("Failed to add CoAP resources. Error: %d", error);
-		goto end;
-	}
-
-	error = otCoapAddResource(srv_context.ot, &provisioning_resource);
-	if (error != OT_ERROR_NONE) {
-		LOG_ERR("Failed to add CoAP resources. Error: %d", error);
-		goto end;
-	}
+	otCoapAddResource(srv_context.ot, &light_resource);
+	otCoapAddResource(srv_context.ot, &provisioning_resource);
 
 	error = otCoapStart(srv_context.ot, COAP_PORT);
 	if (error != OT_ERROR_NONE) {
