@@ -63,7 +63,7 @@ static void set_dtt(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *ctx,
 	}
 
 	if (IS_ENABLED(CONFIG_BT_MESH_DTT_SRV_PERSISTENT)) {
-		(void)bt_mesh_model_data_store(model, false,
+		(void)bt_mesh_model_data_store(model, false, NULL,
 					       &srv->transition_time,
 					       sizeof(srv->transition_time));
 	}

@@ -58,7 +58,7 @@ static void store_props(const struct bt_mesh_prop_srv *srv)
 		user_access[i] = srv->properties[i].user_access;
 	}
 
-	(void)bt_mesh_model_data_store(srv->mod, false, user_access,
+	(void)bt_mesh_model_data_store(srv->mod, false, NULL, user_access,
 				       srv->property_count);
 }
 

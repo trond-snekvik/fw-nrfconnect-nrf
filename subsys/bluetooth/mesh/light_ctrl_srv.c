@@ -591,8 +591,8 @@ static void store_timeout(struct k_work *work)
 #endif
 		};
 
-		err = bt_mesh_model_data_store(srv->setup_srv, false, &data,
-					       sizeof(data));
+		err = bt_mesh_model_data_store(srv->setup_srv, false, NULL,
+					       &data, sizeof(data));
 		if (err) {
 			BT_ERR("Failed storing config: %d", err);
 		}
@@ -607,7 +607,7 @@ static void store_timeout(struct k_work *work)
 		atomic_set_bit_to(&data, STORED_FLAG_OCC_MODE,
 				  atomic_test_bit(&srv->flags, FLAG_OCC_MODE));
 
-		err = bt_mesh_model_data_store(srv->model, false, &data,
+		err = bt_mesh_model_data_store(srv->model, false, NULL, &data,
 					       sizeof(data));
 		if (err) {
 			BT_ERR("Failed storing state: %d", err);

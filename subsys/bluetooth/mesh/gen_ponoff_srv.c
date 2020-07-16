@@ -44,7 +44,7 @@ static int store(struct bt_mesh_ponoff_srv *srv,
 		return -EINVAL;
 	}
 
-	return bt_mesh_model_data_store(srv->ponoff_model, false, &data,
+	return bt_mesh_model_data_store(srv->ponoff_model, false, NULL, &data,
 					sizeof(data));
 }
 

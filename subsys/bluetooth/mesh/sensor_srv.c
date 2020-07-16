@@ -66,7 +66,8 @@ static void cadence_store(const struct bt_mesh_sensor_srv *srv)
 		}
 	}
 
-	if (bt_mesh_model_data_store(srv->model, false, buf.data, buf.len)) {
+	if (bt_mesh_model_data_store(srv->model, false, NULL,
+				     buf.data, buf.len)) {
 		BT_ERR("Sensor server data store failed");
 	}
 }

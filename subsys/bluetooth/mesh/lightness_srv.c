@@ -44,8 +44,8 @@ static int store_state(struct bt_mesh_lightness_srv *srv)
 	       data.last, data.default_light, data.is_on ? "On" : "Off",
 	       data.range.min, data.range.max);
 
-	return bt_mesh_model_data_store(srv->lightness_model, false, &data,
-					sizeof(data));
+	return bt_mesh_model_data_store(srv->lightness_model, false, NULL,
+					&data, sizeof(data));
 }
 
 static void lvl_status_encode(struct net_buf_simple *buf,

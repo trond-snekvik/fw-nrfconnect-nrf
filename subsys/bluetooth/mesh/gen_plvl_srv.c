@@ -31,7 +31,7 @@ static int store_state(struct bt_mesh_plvl_srv *srv)
 		.range = srv->range,
 	};
 
-	return bt_mesh_model_data_store(srv->plvl_model, false, &data,
+	return bt_mesh_model_data_store(srv->plvl_model, false, NULL, &data,
 					sizeof(data));
 }
 
