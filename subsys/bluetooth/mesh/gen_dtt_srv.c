@@ -103,10 +103,15 @@ static int bt_mesh_dtt_srv_init(struct bt_mesh_model *model)
 
 #ifdef CONFIG_BT_MESH_DTT_SRV_PERSISTENT
 static int bt_mesh_dtt_srv_settings_set(struct bt_mesh_model *model,
+					const char *name,
 					size_t len_rd, settings_read_cb read_cb,
 					void *cb_arg)
 {
 	struct bt_mesh_dtt_srv *srv = model->user_data;
+
+	if (name) {
+		return -ENOTSUP; /* TODO support this */
+	}
 
 	ssize_t bytes = read_cb(cb_arg, &srv->transition_time,
 				sizeof(srv->transition_time));

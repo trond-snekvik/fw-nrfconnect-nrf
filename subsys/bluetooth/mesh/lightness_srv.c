@@ -724,6 +724,7 @@ static int bt_mesh_lightness_srv_init(struct bt_mesh_model *mod)
 
 #ifdef CONFIG_BT_SETTINGS
 static int bt_mesh_lightness_srv_settings_set(struct bt_mesh_model *mod,
+					      const char *name,
 					      size_t len_rd,
 					      settings_read_cb read_cb,
 					      void *cb_arg)
@@ -731,6 +732,10 @@ static int bt_mesh_lightness_srv_settings_set(struct bt_mesh_model *mod,
 	struct bt_mesh_lightness_srv *srv = mod->user_data;
 	struct bt_mesh_lightness_srv_settings_data data;
 	ssize_t result;
+
+	if (name) {
+		return -ENOTSUP; /* TODO support this */
+	}
 
 	result = read_cb(cb_arg, &data, sizeof(data));
 	if (result <= 0) {

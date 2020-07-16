@@ -1269,12 +1269,17 @@ static int light_ctrl_srv_init(struct bt_mesh_model *mod)
 	return 0;
 }
 
-static int light_ctrl_srv_settings_set(struct bt_mesh_model *mod, size_t len_rd,
+static int light_ctrl_srv_settings_set(struct bt_mesh_model *mod,
+				       const char *name, size_t len_rd,
 				       settings_read_cb read_cb, void *cb_arg)
 {
 	struct bt_mesh_light_ctrl_srv *srv = mod->user_data;
 	atomic_t data;
 	ssize_t result;
+
+	if (name) {
+		return -ENOTSUP; /* TODO support this */
+	}
 
 	result = read_cb(cb_arg, &data, sizeof(data));
 	if (result <= 0) {
@@ -1377,12 +1382,17 @@ static int lc_setup_srv_init(struct bt_mesh_model *mod)
 	return 0;
 }
 
-static int lc_setup_srv_settings_set(struct bt_mesh_model *mod, size_t len_rd,
+static int lc_setup_srv_settings_set(struct bt_mesh_model *mod,
+				     const char *name, size_t len_rd,
 				     settings_read_cb read_cb, void *cb_arg)
 {
 	struct bt_mesh_light_ctrl_srv *srv = mod->user_data;
 	struct setup_srv_storage_data data;
 	ssize_t result;
+
+	if (name) {
+		return -ENOTSUP; /* TODO support this */
+	}
 
 	result = read_cb(cb_arg, &data, sizeof(data));
 	if (result <= 0) {

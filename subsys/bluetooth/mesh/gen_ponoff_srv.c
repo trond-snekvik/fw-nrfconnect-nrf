@@ -213,12 +213,17 @@ static void bt_mesh_ponoff_srv_reset(struct bt_mesh_model *model)
 
 #ifdef CONFIG_BT_SETTINGS
 static int bt_mesh_ponoff_srv_settings_set(struct bt_mesh_model *model,
+					   const char *name,
 					   size_t len_rd,
 					   settings_read_cb read_cb,
 					   void *cb_arg)
 {
 	struct bt_mesh_ponoff_srv *srv = model->user_data;
 	struct ponoff_settings_data data;
+
+	if (name) {
+		return -ENOTSUP; /* TODO support this */
+	}
 
 	if (read_cb(cb_arg, &data, sizeof(data)) != sizeof(data)) {
 		return -EINVAL;
