@@ -1033,6 +1033,7 @@ void nct_dc_endpoint_set(const struct nrf_cloud_data *tx_endp,
 		if (job_status_utf8 == NULL) {
 			LOG_ERR("Failed to allocate mem for job status topic");
 			nct.job_status_endp.utf8 = NULL;
+			nct.job_status_endp.size = 0;
 			return;
 		}
 		ret = snprintf(job_status_utf8,
