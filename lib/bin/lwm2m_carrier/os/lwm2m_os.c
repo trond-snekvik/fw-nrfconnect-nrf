@@ -275,7 +275,7 @@ void lwm2m_os_log(int level, const char *fmt, ...)
 		va_list ap;
 
 		va_start(ap, fmt);
-		log_generic(src_level, fmt, ap);
+		log_generic(src_level, fmt, ap, LOG_STRDUP_SKIP);
 		va_end(ap);
 	}
 }
