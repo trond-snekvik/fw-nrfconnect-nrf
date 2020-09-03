@@ -44,6 +44,12 @@ if (CONFIG_BT_RPMSG_NRF53)
         )
     endif()
 
+    if (CONFIG_BT_MESH)
+    add_overlay_config(
+      hci_rpmsg
+      ${NRF_DIR}/subsys/bluetooth/mesh/hci_rpmsg.conf)
+    endif()
+
     add_child_image(
       NAME hci_rpmsg
       SOURCE_DIR ${ZEPHYR_BASE}/samples/bluetooth/hci_rpmsg
