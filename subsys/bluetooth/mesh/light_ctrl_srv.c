@@ -32,6 +32,7 @@ enum flags {
 	FLAG_TRANSITION,
 	FLAG_STORE_CFG,
 	FLAG_STORE_STATE,
+	FLAG_SCENE_RECALL_ON_START,
 	FLAG_CTRL_SRV_MANUALLY_ENABLED,
 	FLAG_STARTED,
 };
@@ -1298,7 +1299,10 @@ static void onoff_set(struct bt_mesh_onoff_srv *onoff,
 		set->transition->time ? set->transition : NULL;
 	enum bt_mesh_light_ctrl_srv_state prev_state = srv->state;
 
-	if (set->transition->delay) {
+	if (!atomic_test_bit(&srv->flags, FLAG_STARTED)) {
+		/* Will be handled in the start function: */
+		atomic_set_bit_to(&srv->flags, FLAG_ON, set->on_off);
+	} else if (set->transition->delay) {
 		delayed_set(srv, set->transition, set->on_off);
 	} else if (set->on_off) {
 		turn_on(srv, transition, false);
@@ -1368,7 +1372,12 @@ static void scene_recall(struct bt_mesh_model *mod, const uint8_t data[],
 #if CONFIG_BT_MESH_LIGHT_CTRL_SRV_REG
 	srv->reg.cfg = scene->reg;
 #endif
-	if (scene->enabled) {
+
+	if (!atomic_test_bit(&srv->flags, FLAG_STARTED)) {
+		atomic_set_bit(&srv->flags, FLAG_SCENE_RECALL_ON_START);
+		atomic_set_bit_to(&srv->flags, FLAG_CTRL_SRV_MANUALLY_ENABLED,
+				  scene->enabled);
+	} else if (scene->enabled) {
 		ctrl_enable(srv);
 	} else {
 		ctrl_disable(srv);
@@ -1469,6 +1478,8 @@ static int light_ctrl_srv_settings_set(struct bt_mesh_model *mod,
 static int light_ctrl_srv_start(struct bt_mesh_model *mod)
 {
 	struct bt_mesh_light_ctrl_srv *srv = mod->user_data;
+	enum bt_mesh_on_power_up on_power_up =
+		srv->lightness->ponoff.on_power_up;
 
 	atomic_set_bit(&srv->flags, FLAG_STARTED);
 
@@ -1486,7 +1497,16 @@ static int light_ctrl_srv_start(struct bt_mesh_model *mod)
 				     srv->lightness->lightness_model);
 	}
 
-	switch (srv->lightness->ponoff.on_power_up) {
+	/* If the Scene server recalled a scene on startup, it will have
+	 * populated the state flags, and we can perform a restore to activate
+	 * them:
+	 */
+	if (atomic_test_and_clear_bit(&srv->flags,
+				      FLAG_SCENE_RECALL_ON_START)) {
+		on_power_up = BT_MESH_ON_POWER_UP_RESTORE;
+	}
+
+	switch (on_power_up) {
 	case BT_MESH_ON_POWER_UP_OFF:
 		if (atomic_test_bit(&srv->flags,
 				    FLAG_CTRL_SRV_MANUALLY_ENABLED)) {
