@@ -398,6 +398,23 @@ static int turn_on(struct bt_mesh_light_ctrl_srv *srv,
 	return 0;
 }
 
+static void standby(struct bt_mesh_light_ctrl_srv *srv, uint32_t fade_time)
+{
+	transition_start(srv, LIGHT_CTRL_STATE_STANDBY, fade_time);
+	atomic_clear_bit(&srv->flags, FLAG_ON);
+	store(srv, FLAG_STORE_STATE);
+
+	/* According to the Bluetooth Mesh Model specification section
+	 * 5.1.3.2.1, the scene should be invalidated if a stored state changes
+	 * after the recall. Since the server's On state is stored in the scene,
+	 * we should invalidate it when going to standby, in case it was stored
+	 * as "on".
+	 */
+	if (IS_ENABLED(CONFIG_BT_MESH_SCENE_SRV)) {
+		bt_mesh_scene_invalidate(&srv->scene);
+	}
+}
+
 static void turn_off_auto(struct bt_mesh_light_ctrl_srv *srv)
 {
 	if (!is_enabled(srv) || srv->state != LIGHT_CTRL_STATE_PROLONG) {
@@ -406,11 +423,7 @@ static void turn_off_auto(struct bt_mesh_light_ctrl_srv *srv)
 
 	BT_DBG("");
 
-	transition_start(srv, LIGHT_CTRL_STATE_STANDBY,
-			 srv->cfg.fade_standby_auto);
-
-	atomic_clear_bit(&srv->flags, FLAG_ON);
-	store(srv, FLAG_STORE_STATE);
+	standby(srv, srv->cfg.fade_standby_auto);
 	onoff_pub(srv, LIGHT_CTRL_STATE_PROLONG, true);
 }
 
@@ -431,9 +444,7 @@ static int turn_off(struct bt_mesh_light_ctrl_srv *srv,
 	enum bt_mesh_light_ctrl_srv_state prev_state = srv->state;
 
 	if (prev_state != LIGHT_CTRL_STATE_STANDBY) {
-		transition_start(srv, LIGHT_CTRL_STATE_STANDBY, fade_time);
-		atomic_clear_bit(&srv->flags, FLAG_ON);
-		store(srv, FLAG_STORE_STATE);
+		standby(srv, fade_time);
 		onoff_pub(srv, prev_state, pub_gen_onoff);
 	} else if (fade_time < remaining_fade_time(srv)) {
 		/* Replacing current transition with a manual transition if it's
@@ -1338,7 +1349,8 @@ const struct bt_mesh_onoff_srv_handlers _bt_mesh_light_ctrl_srv_onoff = {
 
 struct __packed scene_data {
 	uint8_t enabled:1,
-		occ:1;
+		occ:1,
+		on:1;
 	struct bt_mesh_light_ctrl_srv_cfg cfg;
 #if CONFIG_BT_MESH_LIGHT_CTRL_SRV_REG
 	struct bt_mesh_light_ctrl_srv_reg_cfg reg;
@@ -1352,6 +1364,7 @@ static int scene_store(struct bt_mesh_model *mod, uint8_t data[])
 
 	scene->enabled = is_enabled(srv);
 	scene->occ = atomic_test_bit(&srv->flags, FLAG_OCC_MODE);
+	scene->on = bt_mesh_light_ctrl_srv_is_on(srv);
 	scene->cfg = srv->cfg;
 #if CONFIG_BT_MESH_LIGHT_CTRL_SRV_REG
 	scene->reg = srv->reg.cfg;
@@ -1373,13 +1386,35 @@ static void scene_recall(struct bt_mesh_model *mod, const uint8_t data[],
 	srv->reg.cfg = scene->reg;
 #endif
 
+	BT_DBG("%s occ: %u enabled: %u", scene->on ? "on" : "off", scene->occ,
+	       scene->enabled);
+
 	if (!atomic_test_bit(&srv->flags, FLAG_STARTED)) {
+		/* Postpone until startup */
 		atomic_set_bit(&srv->flags, FLAG_SCENE_RECALL_ON_START);
 		atomic_set_bit_to(&srv->flags, FLAG_CTRL_SRV_MANUALLY_ENABLED,
 				  scene->enabled);
-	} else if (scene->enabled) {
-		ctrl_enable(srv);
-	} else {
+		atomic_set_bit_to(&srv->flags, FLAG_ON, scene->on);
+		return;
+	}
+
+	if (scene->enabled) {
+		if (!is_enabled(srv)) {
+			ctrl_enable(srv);
+		}
+
+		if (!scene->on) {
+			return;
+		}
+
+		/* Ignoring transition time if it's 0, as this should be
+		 * interpreted as "use default" in scene:
+		 */
+		turn_on(srv, transition->time ? transition : NULL, true);
+		return;
+	}
+
+	if (is_enabled(srv)) {
 		ctrl_disable(srv);
 	}
 }
@@ -1433,6 +1468,7 @@ static int light_ctrl_srv_init(struct bt_mesh_model *mod)
 
 	if (IS_ENABLED(CONFIG_BT_MESH_SCENE_SRV)) {
 		bt_mesh_scene_entry_add(mod, &srv->scene, &scene_type, false);
+		bt_mesh_scene_entry_remove(&srv->onoff.scene, false);
 	}
 
 	return 0;

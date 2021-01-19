@@ -138,11 +138,14 @@ static struct lightness_ctx my_ctx = {
 static struct bt_mesh_light_ctrl_srv light_ctrl_srv =
 	BT_MESH_LIGHT_CTRL_SRV_INIT(&my_ctx.lightness_srv);
 
+static struct bt_mesh_scene_srv scene;
+
 static struct bt_mesh_elem elements[] = {
 	BT_MESH_ELEM(1,
 		     BT_MESH_MODEL_LIST(
 			     BT_MESH_MODEL_CFG_SRV,
 			     BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
+			     BT_MESH_MODEL_SCENE_SRV(&scene),
 			     BT_MESH_MODEL_LIGHTNESS_SRV(
 					 &my_ctx.lightness_srv)),
 		     BT_MESH_MODEL_NONE),

@@ -212,9 +212,9 @@ static void entry_recover(struct bt_mesh_scene_srv *srv, bool vnd,
 			  const struct scene_data *data)
 {
 	sys_slist_t *list = vnd ? &srv->vnd : &srv->sig;
-	struct bt_mesh_scene_entry *entry;
+	struct bt_mesh_scene_entry *entry, *next;
 
-	SYS_SLIST_FOR_EACH_CONTAINER(list, entry, n) {
+	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(list, entry, next, n) {
 		if (data->elem_idx != entry->mod->elem_idx) {
 			continue;
 		}
@@ -324,7 +324,7 @@ static void page_store(struct bt_mesh_scene_srv *srv, uint16_t scene,
 static enum bt_mesh_scene_status scene_store(struct bt_mesh_scene_srv *srv,
 					     uint16_t scene)
 {
-	struct bt_mesh_scene_entry *entry;
+	struct bt_mesh_scene_entry *entry, *next;
 	uint16_t *existing;
 	uint8_t buf[SCENE_PAGE_SIZE];
 	uint8_t page = 0;
@@ -336,7 +336,7 @@ static enum bt_mesh_scene_status scene_store(struct bt_mesh_scene_srv *srv,
 		return BT_MESH_SCENE_REGISTER_FULL;
 	}
 
-	SYS_SLIST_FOR_EACH_CONTAINER(&srv->sig, entry, n) {
+	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&srv->sig, entry, next, n) {
 		ssize_t size;
 
 		if (len + sizeof(struct scene_data) + entry->type->maxlen >=
@@ -360,7 +360,7 @@ static enum bt_mesh_scene_status scene_store(struct bt_mesh_scene_srv *srv,
 
 	page = 0;
 
-	SYS_SLIST_FOR_EACH_CONTAINER(&srv->vnd, entry, n) {
+	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&srv->vnd, entry, next, n) {
 		ssize_t size;
 
 		/* Account for Company ID: */
@@ -721,6 +721,14 @@ void bt_mesh_scene_entry_add(struct bt_mesh_model *mod,
 	}
 }
 
+void bt_mesh_scene_entry_remove(struct bt_mesh_scene_entry *entry, bool vnd)
+{
+	struct bt_mesh_scene_srv *srv = entry->srv;
+	sys_slist_t *list = vnd ? &srv->vnd : &srv->sig;
+
+	sys_slist_find_and_remove(list, &entry->n);
+}
+
 void bt_mesh_scene_invalidate(struct bt_mesh_scene_entry *entry)
 {
 	if (!entry->srv) {
@@ -734,11 +742,6 @@ int bt_mesh_scene_srv_set(struct bt_mesh_scene_srv *srv, uint16_t scene,
 			  struct bt_mesh_model_transition *transition)
 {
 	char path[25];
-
-	if (srv->curr == scene) {
-		BT_DBG("Already on Scene 0x%x", scene);
-		return -EALREADY;
-	}
 
 	if (!scene_find(srv, scene)) {
 		BT_WARN("Unknown scene 0x%x", scene);

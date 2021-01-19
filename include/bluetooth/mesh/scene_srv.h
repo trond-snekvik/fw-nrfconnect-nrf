@@ -172,6 +172,12 @@ void bt_mesh_scene_entry_add(struct bt_mesh_model *mod,
 			     const struct bt_mesh_scene_entry_type *type,
 			     bool vnd);
 
+/** @brief Remove a scene entry from the scene server list.
+ *
+ *  @param[in] entry Scene entry to remove.
+ */
+void bt_mesh_scene_entry_remove(struct bt_mesh_scene_entry *entry, bool vnd);
+
 /** @brief Notify the Scene Server that a Scene entry has changed.
  *
  *  Whenever some state in the Scene has changed outside of Scene recall

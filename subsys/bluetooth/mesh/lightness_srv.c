@@ -511,6 +511,16 @@ static void lvl_set(struct bt_mesh_lvl_srv *lvl_srv,
 	};
 	struct bt_mesh_lightness_status status = { 0 };
 
+
+	/* Light control server should only yield control if this lvl_set was
+	 * the result of a received message, to avoid cancelling control on
+	 * scene recall:
+	 */
+	if (atomic_test_bit(&srv->flags, LIGHTNESS_SRV_FLAG_CONTROLLED) &&
+	    !ctx) {
+		return;
+	}
+
 	if (lvl_set->new_transaction) {
 		/* According to the Mesh Model Specification section 6.2.3.1,
 		 * manual changes to the lightness should disable control.
@@ -755,6 +765,11 @@ static int bt_mesh_lightness_srv_init(struct bt_mesh_model *mod)
 			bt_mesh_model_find(
 				bt_mesh_model_elem(mod),
 				BT_MESH_MODEL_ID_LIGHT_LIGHTNESS_SETUP_SRV));
+	}
+
+	if (IS_ENABLED(CONFIG_BT_MESH_SCENE_SRV)) {
+		/* Scene load is handled by the level server: */
+		bt_mesh_scene_entry_remove(&srv->ponoff.onoff.scene, false);
 	}
 
 	return 0;

@@ -627,6 +627,11 @@ static int bt_mesh_plvl_srv_init(struct bt_mesh_model *mod)
 				BT_MESH_MODEL_ID_GEN_POWER_LEVEL_SETUP_SRV));
 	}
 
+	if (IS_ENABLED(CONFIG_BT_MESH_SCENE_SRV)) {
+		/* Will be handled by the level server */
+		bt_mesh_scene_entry_remove(&srv->ponoff.onoff.scene, false);
+	}
+
 	return 0;
 }
 
