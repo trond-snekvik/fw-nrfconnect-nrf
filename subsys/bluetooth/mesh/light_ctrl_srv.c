@@ -57,7 +57,8 @@ static void restart_timer(struct bt_mesh_light_ctrl_srv *srv, uint32_t delay)
 static void reg_start(struct bt_mesh_light_ctrl_srv *srv)
 {
 #if CONFIG_BT_MESH_LIGHT_CTRL_SRV_REG
-	k_delayed_work_submit(&srv->reg.timer, K_MSEC(REG_INT));
+	srv->reg.timestamp = 0;
+	k_delayed_work_submit(&srv->reg.timer, K_NO_WAIT);
 #endif
 }
 
@@ -495,6 +496,14 @@ static void reg_step(struct k_work *work)
 
 	k_delayed_work_submit(&srv->reg.timer, K_MSEC(REG_INT));
 
+	int64_t delta;
+	if (srv->reg.timestamp) {
+		delta = k_uptime_delta(&srv->reg.timestamp);
+	} else {
+		srv->reg.timestamp = k_uptime_get();
+		delta = 0;
+	}
+
 	float target = lux_getf(srv);
 	float ambient = sensor_to_float(&srv->ambient_lux);
 	float error = target - ambient;
@@ -520,7 +529,7 @@ static void reg_step(struct k_work *work)
 		ki = srv->reg.cfg.kid;
 	}
 
-	srv->reg.i += (input * ki) * ((float)REG_INT / (float)MSEC_PER_SEC);
+	srv->reg.i += (input * ki) * ((float)delta / (float)MSEC_PER_SEC);
 	srv->reg.i = CLAMP(srv->reg.i, 0, UINT16_MAX);
 
 	float p = input * kp;
@@ -540,9 +549,9 @@ static void reg_step(struct k_work *work)
 
 		srv->reg.prev = output;
 		atomic_set_bit(&srv->flags, FLAG_REGULATOR);
-		light_set(srv, light_to_repr(output, LINEAR), REG_INT);
+		light_set(srv, light_to_repr(output, LINEAR), 0);
 	} else if (atomic_test_and_clear_bit(&srv->flags, FLAG_REGULATOR)) {
-		light_set(srv, light_to_repr(lvl, LINEAR), REG_INT);
+		light_set(srv, light_to_repr(lvl, LINEAR), 0);
 	}
 }
 #endif
